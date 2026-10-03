@@ -573,6 +573,10 @@ contextBridge.exposeInMainWorld(
       ipcRenderer.invoke('desktop-host-plugin:status'),
     setBuiltInImageGenerationEnabled: (enabled: boolean): Promise<{ ok: boolean; enabled?: boolean; restartRequired?: boolean; reason?: string }> =>
       ipcRenderer.invoke('desktop-host-plugin:set-enabled', enabled),
+    getHostPluginState: (name: string): Promise<{ enabled: boolean }> =>
+      ipcRenderer.invoke('desktop-host-plugin:state', name),
+    setHostPluginState: (name: string, enabled: boolean): Promise<{ ok: boolean; enabled?: boolean; restartRequired?: boolean }> =>
+      ipcRenderer.invoke('desktop-host-plugin:set-state', name, enabled),
     uninstallMarket: (): Promise<{ ok: boolean }> => ipcRenderer.invoke('market:uninstall'),
     openInFinder: (path: string): Promise<{ ok: boolean }> => ipcRenderer.invoke('harness:open-in-finder', path)
   })

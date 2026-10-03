@@ -56,6 +56,10 @@ Mounted like every host plugin (see `docs/patch-plugin-contract.md`):
    `schemastery`) resolve to the installation's copies through the
    `@deepseek-ai/*` host fallback; they must stay declared so the linked
    package's imports are intercepted to the runtime.
+5. Plugins → Desktop plugins tab shows a "Fast Jev compaction" on/off card
+   (`dsh-desktop-market-installer` client, generic host-plugin state
+   channels). Off drops the overlay patch layer at next Harness start, so
+   the presets fall back to the built-in summarizer; on restores the swap.
 
 ## API key
 

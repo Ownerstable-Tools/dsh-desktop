@@ -135,10 +135,14 @@ const HOST_BUNDLE_PATCH_OVERLAYS = ['dsh-desktop-compaction-fast-jev'] as const
  * anchored there so overlays come from the running installation, never from
  * the development repository.
  */
-export async function hostBundlePatchOverlayPaths(dshEntryPath: string): Promise<string[]> {
+export async function hostBundlePatchOverlayPaths(
+  dshEntryPath: string,
+  disabled: readonly string[] = []
+): Promise<string[]> {
   const resolve = createRequire(dshEntryPath).resolve
   const paths: string[] = []
   for (const name of HOST_BUNDLE_PATCH_OVERLAYS) {
+    if (disabled.includes(name)) continue
     let manifestPath: string
     try {
       manifestPath = resolve(`${name}/package.json`)

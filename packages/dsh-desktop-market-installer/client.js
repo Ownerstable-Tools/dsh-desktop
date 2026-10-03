@@ -45,7 +45,9 @@ window.__ModuleLoader__.load({
       removed: 'Plugin market uninstalled',
       removedHint: 'dsh-market has been removed. Restart Harness to finish.',
       uninstallFailed: 'Plugin market could not be uninstalled.',
-      builtInImageTitle: 'Built-in image generation', builtInImageEnabled: 'The built-in plugin is on.', builtInImageDisabled: 'The built-in plugin is off. You can use the market version.', builtInImageEnable: 'Enable built-in plugin', builtInImageConflict: 'Disable the market version of image generation before enabling the built-in plugin.', builtInImageFailed: 'Could not read or change the built-in plugin state.', builtInImageRetry: 'Try again', builtInImageRestart: 'Restart Harness to apply', builtInImagePending: 'The built-in plugin will load after Harness restarts.'
+      builtInImageTitle: 'Built-in image generation', builtInImageEnabled: 'The built-in plugin is on.', builtInImageDisabled: 'The built-in plugin is off. You can use the market version.', builtInImageEnable: 'Enable built-in plugin', builtInImageConflict: 'Disable the market version of image generation before enabling the built-in plugin.', builtInImageFailed: 'Could not read or change the built-in plugin state.', builtInImageRetry: 'Try again', builtInImageRestart: 'Restart Harness to apply', builtInImagePending: 'The built-in plugin will load after Harness restarts.',
+      hostPluginsTabTitle: 'Desktop plugins',
+      builtInJevTitle: 'Fast Jev compaction', builtInJevEnabled: 'Compactions prune stale tool calls and results with Jev and keep everything else verbatim.', builtInJevDisabled: 'Compactions use the built-in LLM summary.', builtInJevSwitch: 'Use Jev compaction', builtInJevFailed: 'Could not read or change the Jev compaction state.', builtInJevRetry: 'Try again', builtInJevRestart: 'Restart Harness to apply', builtInJevPending: 'The change applies after Harness restarts.'
     }
 
     const zh = {
@@ -81,7 +83,9 @@ window.__ModuleLoader__.load({
       removed: '插件市场已卸载',
       removedHint: 'dsh-market 已移除，请重启 Harness 完成卸载。',
       uninstallFailed: '插件市场卸载失败。',
-      builtInImageTitle: '内置生图工具', builtInImageEnabled: '内置插件已启用。', builtInImageDisabled: '内置插件已关闭，可以使用市场版本。', builtInImageEnable: '启用内置插件', builtInImageConflict: '请先停用市场版本的生图工具，再启用内置插件。', builtInImageFailed: '无法读取或更改内置插件状态。', builtInImageRetry: '重试', builtInImageRestart: '重启 Harness 使更改生效', builtInImagePending: '重启 Harness 后将加载内置插件。'
+      builtInImageTitle: '内置生图工具', builtInImageEnabled: '内置插件已启用。', builtInImageDisabled: '内置插件已关闭，可以使用市场版本。', builtInImageEnable: '启用内置插件', builtInImageConflict: '请先停用市场版本的生图工具，再启用内置插件。', builtInImageFailed: '无法读取或更改内置插件状态。', builtInImageRetry: '重试', builtInImageRestart: '重启 Harness 使更改生效', builtInImagePending: '重启 Harness 后将加载内置插件。',
+      hostPluginsTabTitle: '桌面插件',
+      builtInJevTitle: 'Jev 逐字压缩', builtInJevEnabled: '压缩时由 Jev 剔除过期的工具调用与结果，其余内容保持逐字不变。', builtInJevDisabled: '压缩使用内置 LLM 摘要。', builtInJevSwitch: '启用 Jev 压缩', builtInJevFailed: '无法读取或更改 Jev 压缩状态。', builtInJevRetry: '重试', builtInJevRestart: '重启 Harness 使更改生效', builtInJevPending: '重启 Harness 后生效。'
     }
 
     const css = `
@@ -195,6 +199,62 @@ window.__ModuleLoader__.load({
         error && React.createElement('p', { className: 'dshDesktopMarketError', role: 'alert' }, t(error)),
         !state && error && React.createElement('button', { className: 'dshDesktopMarketButton dshDesktopMarketSecondary', type: 'button', onClick: () => { setError(''); setRetry(value => value + 1) } }, t('builtInImageRetry')),
         restart && React.createElement('button', { className: 'dshDesktopMarketButton dshDesktopMarketSecondary', type: 'button', disabled: busy, onClick: restartHarness }, t('builtInImageRestart')))
+    }
+
+    const JEV_PLUGIN_NAME = 'dsh-desktop-compaction-fast-jev'
+
+    /** Toggle for the Jev compaction backend: its whole contribution is the
+     * composed preset override, so disabling it drops the overlay patch layer
+     * and the presets fall back to the built-in summarizer after a restart. */
+    function BuiltInJevControl({ t }) {
+      const [state, setState] = React.useState(null)
+      const [busy, setBusy] = React.useState(false)
+      const [restart, setRestart] = React.useState(false)
+      const [error, setError] = React.useState('')
+      const [retry, setRetry] = React.useState(0)
+      React.useEffect(() => {
+        const desktop = globalThis.dshDesktop
+        if (!desktop?.getHostPluginState) { setError('builtInJevFailed'); return }
+        let active = true
+        void desktop.getHostPluginState(JEV_PLUGIN_NAME).then(result => {
+          if (active) { setState(result); setError('') }
+        }, () => { if (active) setError('builtInJevFailed') })
+        return () => { active = false }
+      }, [retry])
+      if (!state && !error) return null
+      const toggle = async event => {
+        const next = event.target.checked
+        setBusy(true); setError('')
+        try {
+          const result = await globalThis.dshDesktop.setHostPluginState(JEV_PLUGIN_NAME, next)
+          if (!result.ok) { setError('builtInJevFailed'); return }
+          setState(previous => ({ ...previous, enabled: next }))
+          setRestart(true)
+        } catch { setError('builtInJevFailed') }
+        finally { setBusy(false) }
+      }
+      const restartHarness = async () => {
+        setBusy(true); setError('')
+        try {
+          const result = await globalThis.dshDesktop.restartHarness()
+          if (!result.ok) setError('builtInJevFailed')
+        } catch { setError('builtInJevFailed') }
+        finally { setBusy(false) }
+      }
+      return React.createElement('section', { className: 'dshDesktopBuiltInImage', 'data-testid': 'built-in-jev-compaction-control' },
+        React.createElement('span', { className: 'dshDesktopBuiltInImageTitle' }, t('builtInJevTitle')),
+        state && React.createElement('p', { className: 'dshDesktopBuiltInImageHint' }, t(restart ? 'builtInJevPending' : state.enabled ? 'builtInJevEnabled' : 'builtInJevDisabled')),
+        state && React.createElement('label', { className: 'dshDesktopBuiltInImageLabel' },
+          React.createElement('input', { type: 'checkbox', role: 'switch', checked: state.enabled, disabled: busy || restart, onChange: toggle }), t('builtInJevSwitch')),
+        error && React.createElement('p', { className: 'dshDesktopMarketError', role: 'alert' }, t(error)),
+        !state && error && React.createElement('button', { className: 'dshDesktopMarketButton dshDesktopMarketSecondary', type: 'button', onClick: () => { setError(''); setRetry(value => value + 1) } }, t('builtInJevRetry')),
+        restart && React.createElement('button', { className: 'dshDesktopMarketButton dshDesktopMarketSecondary', type: 'button', disabled: busy, onClick: restartHarness }, t('builtInJevRestart')))
+    }
+
+    function DesktopHostPlugins(props) {
+      return React.createElement(React.Fragment, null,
+        React.createElement(BuiltInImageControl, props),
+        React.createElement(BuiltInJevControl, props))
     }
 
     async function readStatus() {
@@ -749,9 +809,9 @@ window.__ModuleLoader__.load({
       ctx.slots.inject('settings.plugins.tab', () =>
         ctx.slots.register(
           { name: 'settings.plugins.tab', id: 'desktop-host-plugins', order: 20,
-            label: () => t('builtInImageTitle'), locale: NS,
+            label: () => t('hostPluginsTabTitle'), locale: NS,
             inject: () => ({ t }) },
-          BuiltInImageControl
+          DesktopHostPlugins
         )
       )
       if (marketAlreadyComposed()) {

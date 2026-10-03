@@ -48,6 +48,7 @@ import { healProfileBundles, HOST_COMPOSED_BUNDLES, inspectProfileConsistency } 
 import { inspectProfileBootInputs } from './state/profile-boot-preflight'
 import {
   BUILTIN_IMAGE_GENERATION,
+  HOST_STATE_PLUGINS,
   prepareProfileBundleForHostEnable,
   profileHasEnabledBundle,
   readDisabledHostPlugins,
@@ -1735,6 +1736,31 @@ function registerHarnessHandlers(): void {
     }
     await setHostPluginEnabled(dshHome, BUILTIN_IMAGE_GENERATION, enabled)
     runtime.note(`[desktop] built-in image generation ${enabled ? 'enabled' : 'disabled'}; Harness restart required`)
+    return { ok: true, enabled, restartRequired: true }
+  })
+
+  // Generic toggle for host plugins whose whole contribution is a composed
+  // patch layer (no market counterpart, no duplicate-install handoff).
+  ipcMain.removeHandler('desktop-host-plugin:state')
+  ipcMain.handle('desktop-host-plugin:state', async (event, name: unknown) => {
+    assertTrustedMainWindowEvent(event)
+    if (typeof name !== 'string' || !HOST_STATE_PLUGINS.includes(name)) {
+      throw new Error('Unknown host plugin')
+    }
+    const dshHome = join(app.getPath('userData'), 'harness')
+    return { enabled: !(await readDisabledHostPlugins(dshHome)).includes(name) }
+  })
+
+  ipcMain.removeHandler('desktop-host-plugin:set-state')
+  ipcMain.handle('desktop-host-plugin:set-state', async (event, name: unknown, enabled: unknown) => {
+    assertTrustedMainWindowEvent(event)
+    if (typeof name !== 'string' || !HOST_STATE_PLUGINS.includes(name)) {
+      throw new Error('Unknown host plugin')
+    }
+    if (typeof enabled !== 'boolean') throw new Error('Expected an enabled state')
+    const dshHome = join(app.getPath('userData'), 'harness')
+    await setHostPluginEnabled(dshHome, name, enabled)
+    runtime.note(`[desktop] host plugin ${name} ${enabled ? 'enabled' : 'disabled'}; Harness restart required`)
     return { ok: true, enabled, restartRequired: true }
   })
 

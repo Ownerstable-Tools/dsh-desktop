@@ -9,6 +9,7 @@ import type { RuntimePhase, RuntimeSnapshot } from '../../shared/contracts'
 import { SAFE_MODE_PROFILE } from '../state/safe-mode-profile'
 import { prepareHostDisabledPluginsPatch } from '../state/host-disabled-plugins'
 import { prepareHostPluginSourcesPatch, hostBundlePatchOverlayPaths } from '../state/host-plugin-sources'
+import { readDisabledHostPlugins } from '../state/host-plugin-state'
 import { parsePluginStartupFailures, type PluginStartupFailure } from '../../shared/plugin-startup-failure'
 import { removeStaleWriterLocks } from './stale-writer-locks'
 
@@ -496,7 +497,9 @@ export class HarnessRuntime {
       // Host plugins that ship preset-level overrides in their own bundle
       // patch: bundle patches only compose for manifest bundles, so Desktop
       // carries them as an extra launcher layer after the profile layers.
-      for (const overlay of await hostBundlePatchOverlayPaths(this.options.dshEntryPath)) {
+      // Disabled host plugins drop out so their override stops composing.
+      const disabledHostPlugins = await readDisabledHostPlugins(this.options.dshHome)
+      for (const overlay of await hostBundlePatchOverlayPaths(this.options.dshEntryPath, disabledHostPlugins)) {
         patchPaths.push(overlay)
       }
     }

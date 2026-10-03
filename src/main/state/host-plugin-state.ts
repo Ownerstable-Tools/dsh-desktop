@@ -5,6 +5,9 @@ import { disableProfilePlugin, isProfilePluginDisabledByPatch, readMarketDisable
 
 const STATE_FILE = 'desktop-host-plugins.json'
 export const BUILTIN_IMAGE_GENERATION = 'dsh-image-generation'
+export const BUILTIN_COMPACTION_FAST_JEV = 'dsh-desktop-compaction-fast-jev'
+/** Host plugins the Plugins settings can toggle through the generic state channels. */
+export const HOST_STATE_PLUGINS: readonly string[] = [BUILTIN_COMPACTION_FAST_JEV]
 const DEFAULT_DISABLED_HOST_PLUGINS = [BUILTIN_IMAGE_GENERATION]
 
 export async function readDisabledHostPlugins(dshHome: string): Promise<string[]> {

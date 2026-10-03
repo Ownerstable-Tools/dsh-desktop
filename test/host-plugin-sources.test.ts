@@ -141,5 +141,11 @@ describe('Desktop host bundle patch overlays', () => {
     await writeFile(anchor, '{"name":"empty-installation"}\n')
     await expect(hostBundlePatchOverlayPaths(anchor)).resolves.toEqual([])
   })
+
+  it('drops overlays of disabled host plugins so their override stops composing', async () => {
+    const dshEntry = createRequire(import.meta.url).resolve('@deepseek-ai/dsh/lib/bin.js')
+    const overlays = await hostBundlePatchOverlayPaths(dshEntry, ['dsh-desktop-compaction-fast-jev'])
+    expect(overlays).toEqual([])
+  })
 })
 
