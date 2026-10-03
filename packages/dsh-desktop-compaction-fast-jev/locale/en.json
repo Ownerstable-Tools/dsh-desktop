@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Fast Jev Compaction",
+    "description": "Replaces the LLM compaction summary with a Jev-pruned verbatim transcript of the compacted span; stale tool calls and results are dropped or truncated, everything kept stays verbatim, and any Jev problem falls back to the built-in summary."
+  }
+}

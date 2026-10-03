@@ -44,6 +44,13 @@
     - id: dsh-image-generation
       name: dsh-image-generation
 
+    # Jev-pruned verbatim compaction backend. Its bundle patch overrides the
+    # standard/cordis/ptc presets, swapping compaction-basic for this engine.
+    # Without a TypeSafe API key it logs one warning per compaction and falls
+    # back to the built-in LLM summary, so it is inert-but-safe by default.
+    - id: dsh-desktop-compaction-fast-jev
+      name: dsh-desktop-compaction-fast-jev
+
     # DSH PPT owns one direct PPTD workflow and one standard Composer client.
     # The package contains no Tencent editor runtime or SlideP route.
     - id: dsh-ppt-composer
