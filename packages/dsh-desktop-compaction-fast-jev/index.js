@@ -85,6 +85,8 @@ export class JevCompactionEngine extends BasicCompactionEngine {
       maxConcurrentRequests: z.number().step(1).min(1),
       /** Minimum estimated character reduction to accept the Jev result. Defaults to 0.25. */
       minReductionRatio: z.number(),
+      /** Ceiling on checkpoint text chars for UI-safe rendering. Defaults to 48000. */
+      maxCheckpointChars: z.number().step(1).min(1),
       /** Minimum mapped span messages worth scoring. Defaults to 4. */
       minSpanMessages: z.number().step(1).min(1),
       /** Ongoing task description; defaults to the span's last user prompts. */

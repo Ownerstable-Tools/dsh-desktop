@@ -84,6 +84,7 @@ environment variables; the key file is the reliable channel there.
 | `maxConcurrentRequests` | `4` | ceiling on simultaneous Jev requests |
 | `minReductionRatio` | `0.25` | below this, fall back to the LLM summary |
 | `minSpanMessages` | `4` | smaller spans fall back |
+| `maxCheckpointChars` | `48000` | ceiling on checkpoint text; older kept messages stub out beyond it (the chat UI blanks on six-figure payloads) |
 | `goal` | last user prompts | task description sent with the state |
 
 Spans whose state floor exceeds the Jev request ceiling are split at

@@ -413,4 +413,28 @@ const OPTIONS = {
   assert.ok(rendered.includes('[tool result id=x]\nbody'))
 }
 
+// ------------------------------------------------- checkpoint char budget
+// Kill record: the chat UI blanks out on six-figure checkpoint payloads, so
+// the budget must stub older kept messages while keeping the newest verbatim.
+
+{
+  const message = (text) => ({ role: 'user', text, toolUses: [] })
+  const result = {
+    messages: [
+      message(`OLDEST-MARKER ${'a'.repeat(300)}`),
+      message(`middle ${'b'.repeat(300)}`),
+      message(`NEWEST-MARKER ${'c'.repeat(300)}`),
+    ],
+    stats: { messagesBefore: 3, messagesAfter: 3, kept: 0, resultsDropped: 0, callsDropped: 0 },
+  }
+  const capped = renderTranscript(result, 0.5, 700)
+  assert.ok(capped.includes('NEWEST-MARKER'), 'newest kept message stays verbatim')
+  assert.ok(!capped.includes('OLDEST-MARKER'), 'oldest overflow is stubbed out')
+  assert.ok(capped.includes('older kept message(s) are stubbed out'), 'stub note present')
+  assert.ok(capped.length < 700 + 800, 'budget bounds the transcript body')
+  const uncapped = renderTranscript(result, 0.5)
+  assert.ok(uncapped.includes('OLDEST-MARKER') && uncapped.includes('NEWEST-MARKER'))
+  assert.ok(!uncapped.includes('stubbed out'), 'no stub note without overflow')
+}
+
 console.log('smoke: all assertions passed')
