@@ -47,7 +47,11 @@ Mounted like every host plugin (see `docs/patch-plugin-contract.md`):
    (`patches/@deepseek-ai+dsh+*.patch`) so the profile projection mirrors it
    into `$DSH_HOME/profiles/node_modules` — enforced by
    `test/desktop-plugin-closure.test.ts`.
-3. An `- insert:` row in `build/dsh-desktop.patch.yml`.
+3. No `- insert:` row: the preset rows swapped in by `cordis.patch.yml` are
+   the only mount, exactly like the standalone bundle integration. Desktop
+   composes the bundle patch as an extra launcher `--patch` layer
+   (`hostBundlePatchOverlayPaths`), because bundle patches otherwise apply
+   only to `dsh.profile.bundles` entries.
 4. Peer dependencies (`@deepseek-ai/cordis`, `dsh-compaction-basic`,
    `schemastery`) resolve to the installation's copies through the
    `@deepseek-ai/*` host fallback; they must stay declared so the linked

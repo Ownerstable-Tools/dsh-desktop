@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { createRequire } from 'node:module'
 import { readFile, rename, rm, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { isMap, isScalar, isSeq, parseDocument } from 'yaml'
 import { readDisabledHostPlugins } from './host-plugin-state'
@@ -111,4 +111,52 @@ export async function prepareHostPluginSourcesPatch(
     await rm(temporary, { force: true })
   }
   return outputPath
+}
+
+/**
+ * Host plugins whose own `dsh.bundle.patch` must compose even though Desktop
+ * mounts them through patch layers instead of `dsh.profile.bundles`: bundle
+ * patches only apply to manifest bundles, so without an overlay launcher
+ * layer a preset-level override shipped by a host plugin would never reach
+ * the composed tree.
+ *
+ * The list is deliberate, not a scan of every host plugin: image generation's
+ * bundle patch re-inserts the row the Desktop patch already inserts (a
+ * duplicate installation enters Recovery), and the PPT packages are
+ * host-composed layers of their own (`HOST_COMPOSED_BUNDLES`).
+ */
+const HOST_BUNDLE_PATCH_OVERLAYS = ['dsh-desktop-compaction-fast-jev'] as const
+
+/**
+ * Absolute patch files of {@link HOST_BUNDLE_PATCH_OVERLAYS} as shipped by the
+ * installation, in list order. Missing packages or declarations are skipped:
+ * an overlay must never block boot.
+ * @param dshEntryPath - the installed `@deepseek-ai/dsh` entry; resolution is
+ * anchored there so overlays come from the running installation, never from
+ * the development repository.
+ */
+export async function hostBundlePatchOverlayPaths(dshEntryPath: string): Promise<string[]> {
+  const resolve = createRequire(dshEntryPath).resolve
+  const paths: string[] = []
+  for (const name of HOST_BUNDLE_PATCH_OVERLAYS) {
+    let manifestPath: string
+    try {
+      manifestPath = resolve(`${name}/package.json`)
+    } catch {
+      continue
+    }
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8')) as {
+      dsh?: { bundle?: { patch?: unknown } }
+    }
+    const patch = manifest.dsh?.bundle?.patch
+    if (typeof patch !== 'string') continue
+    const overlay = join(dirname(manifestPath), patch)
+    try {
+      await readFile(overlay, 'utf8')
+      paths.push(overlay)
+    } catch {
+      continue
+    }
+  }
+  return paths
 }

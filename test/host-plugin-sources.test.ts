@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import { parse } from 'yaml'
-import { hostInsertedPluginNames, prepareHostPluginSourcesPatch } from '../src/main/state/host-plugin-sources'
+import { hostBundlePatchOverlayPaths, hostInsertedPluginNames, prepareHostPluginSourcesPatch } from '../src/main/state/host-plugin-sources'
 import { setHostPluginEnabled } from '../src/main/state/host-plugin-state'
 
 const directories: string[] = []
@@ -121,3 +121,25 @@ describe('Desktop host plugin sources', () => {
     expect(await readFile(patchPath, 'utf8')).toContain('dsh-image-generation')
   })
 })
+
+describe('Desktop host bundle patch overlays', () => {
+  it('resolves the shipped bundle patch of overlay-listed host plugins', async () => {
+    const dshEntry = createRequire(import.meta.url).resolve('@deepseek-ai/dsh/lib/bin.js')
+    const overlays = await hostBundlePatchOverlayPaths(dshEntry)
+    expect(overlays).toHaveLength(1)
+    expect(overlays[0]).toContain('dsh-desktop-compaction-fast-jev')
+    expect(overlays[0]).toContain('cordis.patch.yml')
+    const content = await readFile(overlays[0] ?? '', 'utf8')
+    expect(content).toContain('- id: preset-standard')
+    expect(content).toContain('compaction-fast-jev')
+  })
+
+  it('skips overlays the installation cannot resolve instead of failing boot', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-host-overlays-'))
+    directories.push(root)
+    const anchor = join(root, 'package.json')
+    await writeFile(anchor, '{"name":"empty-installation"}\n')
+    await expect(hostBundlePatchOverlayPaths(anchor)).resolves.toEqual([])
+  })
+})
+
