@@ -27,7 +27,11 @@ import sys
 PKG = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPO = os.path.dirname(os.path.dirname(PKG))
 DEFAULT_PRESETS = os.path.join(REPO, 'node_modules', '@deepseek-ai', 'dsh-web-app', 'presets')
-PACKAGE_NAME = 'dsh-desktop-compaction-fast-jev'
+# The swapped row's `name` must match this package's installed name, so read it
+# from the manifest: the same script then serves the in-repo host plugin and
+# any standalone bundle copy of it.
+with open(os.path.join(PKG, 'package.json'), encoding='utf-8') as _manifest:
+    PACKAGE_NAME = json.load(_manifest)['name']
 # override row id -> shipped presets/<name>.patch.yml (`minimal` ships no
 # compaction rows, so there is nothing to swap there)
 PRESETS = [

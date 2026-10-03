@@ -33,7 +33,11 @@ PRESETS = {
     'preset-cordis': 'cordis',
     'preset-ptc': 'ptc',
 }
-ROW_NAME = 'dsh-desktop-compaction-fast-jev'
+# The swapped row's name must match this package's installed name; reading it
+# from the manifest lets one script serve the in-repo plugin and standalone
+# bundle copies alike.
+with open(os.path.join(PKG, 'package.json'), encoding='utf-8') as _manifest:
+    ROW_NAME = json.load(_manifest)['name']
 
 
 class Loader(yaml.SafeLoader):
