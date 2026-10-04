@@ -84,7 +84,7 @@ environment variables; the key file is the reliable channel there.
 | `maxConcurrentRequests` | `4` | ceiling on simultaneous Jev requests |
 | `minReductionRatio` | `0.25` | below this, fall back to the LLM summary |
 | `minSpanMessages` | `4` | smaller spans fall back |
-| `maxCheckpointChars` | `48000` | ceiling on checkpoint text; older kept messages stub out beyond it (the chat UI blanks on six-figure payloads) |
+| `maxCheckpointChars` | `48000` | ceiling on complete checkpoint text; larger results fall back to the built-in summary instead of discarding kept messages |
 | `goal` | last user prompts | task description sent with the state |
 
 Spans whose state floor exceeds the Jev request ceiling are split at
@@ -132,3 +132,15 @@ upgrade of the `@deepseek-ai/*` packages that changes the shipped
   (the version this repo's lockfile installs) via
   `scripts/regenerate-presets.py`.
 
+
+## Checkpoint size compatibility patch
+
+`patches/@deepseek-ai+dsh-compaction-basic+0.2.0-rc.2.patch` adds an optional
+`canAcceptSummary` callback to the host summarizer input. It checks the
+host-framed checkpoint using the selected span's exact token budget. This
+lets Jev decline an expanding result while its stock-summary fallback is
+still available; the upstream post-return check otherwise fails compaction.
+The adapter falls back if the callback is missing. Remove or adapt this patch
+when upstream exposes an equivalent preflight contract. Regression coverage
+is in `test/jev-checkpoint-size.test.mjs`, including a real durable session
+replacement through the patched host.

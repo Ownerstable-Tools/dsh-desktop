@@ -130,6 +130,12 @@ export class JevCompactionEngine extends BasicCompactionEngine {
         + `(timeout ${this.jevOptions.requestTimeoutSeconds ?? 120}s/request)…`,
       )
       const outcome = await jevSummarize(input.messages, asker, this.jevOptions)
+      const blocks = [{ type: 'text', text: outcome.text }]
+      // Supplied by the pinned host patch: price the actual framed checkpoint
+      // before returning, while the stock-summary fallback is still available.
+      if (typeof input.canAcceptSummary !== 'function' || !input.canAcceptSummary(blocks)) {
+        throw new Error('Jev checkpoint cannot be verified smaller than the selected span')
+      }
       const stats = outcome.stats
       this.ctx.logger.info(
         `fast-jev-compaction: kept ${stats.messagesAfter}/${stats.messagesBefore} messages, no summary `
@@ -145,7 +151,6 @@ export class JevCompactionEngine extends BasicCompactionEngine {
           )
         }
       }
-      const blocks = [{ type: 'text', text: outcome.text }]
       return {
         summary: blocks,
         rawOutput: blocks,

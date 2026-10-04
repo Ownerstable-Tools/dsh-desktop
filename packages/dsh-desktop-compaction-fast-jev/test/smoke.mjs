@@ -414,27 +414,24 @@ const OPTIONS = {
 }
 
 // ------------------------------------------------- checkpoint char budget
-// Kill record: the chat UI blanks out on six-figure checkpoint payloads, so
-// the budget must stub older kept messages while keeping the newest verbatim.
-
+// A renderer limit must never silently drop content Jev chose to preserve.
 {
-  const message = (text) => ({ role: 'user', text, toolUses: [] })
+  const msg = (text) => ({ role: 'user', text, toolUses: [] })
   const result = {
-    messages: [
-      message(`OLDEST-MARKER ${'a'.repeat(300)}`),
-      message(`middle ${'b'.repeat(300)}`),
-      message(`NEWEST-MARKER ${'c'.repeat(300)}`),
-    ],
-    stats: { messagesBefore: 3, messagesAfter: 3, kept: 0, resultsDropped: 0, callsDropped: 0 },
+    messages: [msg('NEVER EDIT src/generated'), msg('recent '.repeat(1000))],
+    stats: { messagesBefore: 2, messagesAfter: 2, kept: 0, resultsDropped: 0, callsDropped: 0 },
   }
-  const capped = renderTranscript(result, 0.5, 700)
-  assert.ok(capped.includes('NEWEST-MARKER'), 'newest kept message stays verbatim')
-  assert.ok(!capped.includes('OLDEST-MARKER'), 'oldest overflow is stubbed out')
-  assert.ok(capped.includes('older kept message(s) are stubbed out'), 'stub note present')
-  assert.ok(capped.length < 700 + 800, 'budget bounds the transcript body')
-  const uncapped = renderTranscript(result, 0.5)
-  assert.ok(uncapped.includes('OLDEST-MARKER') && uncapped.includes('NEWEST-MARKER'))
-  assert.ok(!uncapped.includes('stubbed out'), 'no stub note without overflow')
+  assert.throws(() => renderTranscript(result, 0.5, 700), JevFallbackError,
+    'overflow must request a summary rather than dropping the original constraint')
+  const oversizedNewest = { ...result, messages: [msg('newest '.repeat(30000))] }
+  assert.throws(() => renderTranscript(oversizedNewest, 0.5), JevFallbackError,
+    'even a single newest message must respect the checkpoint limit')
+  const complete = renderTranscript(result, 0.5)
+  assert.ok(complete.includes('NEVER EDIT src/generated'))
+  assert.ok(complete.includes('recent '.repeat(1000).trimEnd()))
+  assert.equal(renderTranscript(result, 0.5, complete.length), complete,
+    'the exact limit includes the header and final newline')
+  assert.throws(() => renderTranscript(result, 0.5, complete.length - 1), JevFallbackError)
 }
 
 console.log('smoke: all assertions passed')

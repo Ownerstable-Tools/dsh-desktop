@@ -1,0 +1,32 @@
+diff --git a/node_modules/@deepseek-ai/dsh-compaction-basic/lib/index.js b/node_modules/@deepseek-ai/dsh-compaction-basic/lib/index.js
+index 68c560b..b6d274a 100644
+--- a/node_modules/@deepseek-ai/dsh-compaction-basic/lib/index.js
++++ b/node_modules/@deepseek-ai/dsh-compaction-basic/lib/index.js
+@@ -584,7 +584,13 @@ async function summarizeCompaction(dependencies, prepared, agent, compactionId,
+ 	for (;;) {
+ 		signal?.throwIfAborted();
+ 		try {
+-			summaryResult = await dependencies.summarize(prepared.input, agent, signal);
++			summaryResult = await dependencies.summarize({
++                ...prepared.input,
++                canAcceptSummary: (summary) => dependencies.meter.estimateMessage(createUserMessage({
++                    content: frameSummary(summary),
++                    source: compactCheckpointSource(compactionId, sourceCommandId)
++                })) < prepared.shadowedRouteTokenCount
++            }, agent, signal);
+ 			break;
+ 		} catch (error) {
+ 			if (signal?.aborted === true) throw error;
+diff --git a/node_modules/@deepseek-ai/dsh-compaction-basic/lib/types/summarizer.d.ts b/node_modules/@deepseek-ai/dsh-compaction-basic/lib/types/summarizer.d.ts
+index 1d1c8c8..8964b9b 100644
+--- a/node_modules/@deepseek-ai/dsh-compaction-basic/lib/types/summarizer.d.ts
++++ b/node_modules/@deepseek-ai/dsh-compaction-basic/lib/types/summarizer.d.ts
+@@ -18,6 +18,8 @@ interface SummaryConfig {
+  * compaction instruction is then the only novel input.
+  */
+ export interface SummarizationInput {
++    /** Preflight the actual framed checkpoint against this selected span. */
++    readonly canAcceptSummary?: (summary: ContentBlock[]) => boolean;
+     /** The conversation's tool schemas, reused for prefix-cache alignment; absent when the request carried none. */
+     readonly tools?: readonly ToolSchema[];
+     /** The derived system head, when present, followed by the shadowed region in surface order. */

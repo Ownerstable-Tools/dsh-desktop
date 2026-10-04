@@ -200,16 +200,16 @@ function stableStringify(value) {
  * Default ceiling on checkpoint text. The chat UI renders the compaction
  * summary and the checkpoint message through its full markdown pipeline and
  * blanks out on six-figure payloads (observed crash at ~210 KB), so the
- * transcript keeps its newest kept messages verbatim and stubs the older
- * overflow in one line. Raise `jev.maxCheckpointChars` for consumers that
+ * adapter declines oversized transcripts so the caller can use the normal
+ * summary without silently discarding kept content. Raise `jev.maxCheckpointChars` for consumers that
  * render plain text (terminal hooks, replays).
  */
 export const DEFAULT_MAX_CHECKPOINT_CHARS = 48000
 
 /**
  * Render the pruned transcript as the checkpoint text. Everything the library
- * kept is emitted verbatim and in order up to the char budget, newest first;
- * truncation notes for dropped results come from the library itself.
+ * kept is emitted verbatim and in order. An oversized checkpoint throws
+ * JevFallbackError; truncation notes for dropped results come from the library.
  */
 export function renderTranscript(result, ratio, budgetChars = DEFAULT_MAX_CHECKPOINT_CHARS) {
   const stats = result.stats
@@ -239,18 +239,6 @@ export function renderTranscript(result, ratio, budgetChars = DEFAULT_MAX_CHECKP
     }
     chunks.push(lines.join('\n'))
   }
-  const kept = []
-  let total = 0
-  let stubbed = 0
-  for (let index = chunks.length - 1; index >= 0; index--) {
-    const chunk = chunks[index]
-    if (kept.length > 0 && total + chunk.length + 1 > budgetChars) {
-      stubbed = index + 1
-      break
-    }
-    kept.unshift(chunk)
-    total += chunk.length + 1
-  }
   const lines = [
     '[Jev-pruned verbatim transcript] The compacted span below is the original '
     + 'conversation, verbatim and in order, minus the tool calls and tool results '
@@ -258,15 +246,14 @@ export function renderTranscript(result, ratio, budgetChars = DEFAULT_MAX_CHECKP
     + `Kept ${stats.messagesAfter}/${stats.messagesBefore} messages `
     + `(${Math.round((ratio ?? 0) * 100)}% smaller): ${stats.kept} tool calls kept, `
     + `${stats.resultsDropped} results truncated, ${stats.callsDropped} calls removed. `
-    + 'Anything removed can be re-fetched by running its tool again.'
-    + (stubbed > 0
-      ? ` ${stubbed} older kept message(s) are stubbed out to keep this checkpoint `
-      + `within ${budgetChars} chars for the chat renderer; re-run their tools if `
-      + 'you need them again.'
-      : ''),
+    + 'Anything removed can be re-fetched by running its tool again.',
     '',
   ]
-  return [...lines, ...kept].join('\n').trimEnd() + '\n'
+  const text = [...lines, ...chunks].join('\n').trimEnd() + '\n'
+  if (text.length > budgetChars) {
+    throw new JevFallbackError(`checkpoint ${text.length} chars exceeds limit ${budgetChars}`)
+  }
+  return text
 }
 
 /**

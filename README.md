@@ -1,3 +1,8 @@
+> **OwnersTable-Tools fork:** Includes the bundled Fast Jev compaction plugin.
+> Start with [OwnersTable setup](docs/ownerstable-setup.md) for the matching
+> runtime, build commands, credentials, verification, and updates. Upstream
+> downloads below do not include this fork's changes.
+
 <h1 align="center">
   <img src="docs/images/readme-logo-black-v020.png" width="64" alt="DSH Desktop logo" valign="middle" />
   DSH Desktop
