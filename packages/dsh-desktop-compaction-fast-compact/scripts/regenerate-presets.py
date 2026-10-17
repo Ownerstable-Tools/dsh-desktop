@@ -11,7 +11,7 @@ also works; its packages/bundle/web-app/presets is appended automatically.
 A Loader override replaces a preset's COMPLETE config, so cordis.patch.yml
 pins copies of the shipped `standard`, `cordis` and `ptc` preset plugin lists,
 each with exactly one change: inside the `compaction` group the
-`compaction-basic` row becomes `compaction-fast-jev`. This script performs the
+`compaction-basic` row becomes `compaction-fast-compact`. This script performs the
 prescribed mechanical transformation (take each shipped file from its
 `- id: preset-<id>` line through EOF, remove exactly four leading spaces from
 every non-blank line, apply the one-row swap) so the pinned copies can be
@@ -46,13 +46,11 @@ OLD_ROW = (
     "            name: '@deepseek-ai/dsh-compaction-basic'\n"
 )
 NEW_ROW = (
-    "          - id: compaction-fast-jev\n"
+    "          - id: compaction-fast-compact\n"
     f"            name: '{PACKAGE_NAME}'\n"
     "            config:\n"
-    "              jev:\n"
-    "                preserveRecentMessages: 6\n"
-    "                maxStateTokens: 27000\n"
-    "                maxRequestTokens: 32000\n"
+    "              fastCompact:\n"
+    "                provider: typesafe\n"
 )
 
 
@@ -111,7 +109,7 @@ def main():
         '# Overrides the shipped `preset-standard`, `preset-cordis` and `preset-ptc`\n'
         '# agent presets (from @deepseek-ai/dsh-web-app presets/*.patch.yml) with exactly\n'
         '# one change each: inside the `compaction` group, the `compaction-basic` backend\n'
-        '# row is replaced by `compaction-fast-jev`, the Jev-pruned verbatim backend from\n'
+        '# row is replaced by `compaction-fast-compact`, the cut-and-archive backend from\n'
         '# this package. command-compact and tool-result-pruner, the group\'s isolate map,\n'
         '# and every other preset row are restated verbatim.\n'
         '#\n'

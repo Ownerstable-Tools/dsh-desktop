@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Preset-override drift check for dsh-desktop-compaction-fast-jev.
+"""Preset-override drift check for dsh-desktop-compaction-fast-compact.
 
 Usage:
     python3 scripts/check-drift.py [PRESETS_SOURCE]
@@ -12,7 +12,7 @@ A Loader override replaces a preset's COMPLETE config, so cordis.patch.yml
 pins copies of the shipped preset plugin lists. After any harness upgrade,
 this script deep-diffs each pinned block against the shipped file it was
 generated from. PASS = the only differences are the known
-compaction-basic -> compaction-fast-jev row swap (3 paths: id, name, added
+compaction-basic -> compaction-fast-compact row swap (3 paths: id, name, added
 config). DRIFT = the shipped preset changed; regenerate with
 scripts/regenerate-presets.py before trusting the override.
 
@@ -82,7 +82,7 @@ def is_swap_only(diffs):
     suffixes = sorted(d.split(': ')[0].rsplit('.', 1)[-1] for d in diffs)
     prefixes = {d.split('.config[0].')[0] for d in diffs if '.config[0].' in d}
     return suffixes == ['config', 'id', 'name'] and len(prefixes) == 1 \
-        and any('compaction-fast-jev' in d for d in diffs) \
+        and any('compaction-fast-compact' in d for d in diffs) \
         and any('dsh-compaction-basic' in d for d in diffs) \
         and any(ROW_NAME in d for d in diffs)
 

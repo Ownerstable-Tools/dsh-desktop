@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { parse as parseYaml } from 'yaml'
 import { projectRoot } from './patch-path'
 
-const PACKAGE_NAME = 'dsh-desktop-compaction-fast-jev'
+const PACKAGE_NAME = 'dsh-desktop-compaction-fast-compact'
 const PRESET_IDS = ['preset-standard', 'preset-cordis', 'preset-ptc'] as const
 
 const profileConfigTags = [
@@ -71,10 +71,10 @@ function diff(a: unknown, b: unknown, base = ''): string[] {
  * copies must stay byte-equivalent to the shipped presets except for the one
  * compaction row swap. Any other difference means a harness upgrade changed
  * the shipped presets and this override would silently revert them —
- * regenerate with `packages/dsh-desktop-compaction-fast-jev/scripts/
+ * regenerate with `packages/dsh-desktop-compaction-fast-compact/scripts/
  * regenerate-presets.py` (see its README).
  */
-describe('dsh-desktop-compaction-fast-jev preset overrides', () => {
+describe('dsh-desktop-compaction-fast-compact preset overrides', () => {
   it('overrides exactly the three presets that ship a compaction-basic row', () => {
     const overrides = readOverrides()
     expect(overrides.map((row) => row.id)).toEqual([...PRESET_IDS])
@@ -83,15 +83,13 @@ describe('dsh-desktop-compaction-fast-jev preset overrides', () => {
     }
   })
 
-  it('swaps in the Jev engine with its budget config and leaves no basic row', () => {
+  it('swaps in the fast-compact engine with its provider config and leaves no basic row', () => {
     for (const row of readOverrides()) {
       const serialized = JSON.stringify(row.config)
-      expect(serialized).toContain('"id":"compaction-fast-jev"')
+      expect(serialized).toContain('"id":"compaction-fast-compact"')
       expect(serialized).toContain(`"name":"${PACKAGE_NAME}"`)
       expect(serialized).not.toContain('compaction-basic')
-      expect(serialized).toContain('"preserveRecentMessages":6')
-      expect(serialized).toContain('"maxStateTokens":27000')
-      expect(serialized).toContain('"maxRequestTokens":32000')
+      expect(serialized).toContain('"fastCompact":{"provider":"typesafe"}')
     }
   })
 
@@ -126,7 +124,7 @@ describe('dsh-desktop-compaction-fast-jev preset overrides', () => {
         })
       )
       expect(prefixes.size).toBe(1)
-      expect(differences.some((entry) => entry.includes('compaction-fast-jev'))).toBe(true)
+      expect(differences.some((entry) => entry.includes('compaction-fast-compact'))).toBe(true)
       expect(differences.some((entry) => entry.includes('dsh-compaction-basic'))).toBe(true)
     }
   )

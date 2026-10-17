@@ -127,11 +127,11 @@ describe('Desktop host bundle patch overlays', () => {
     const dshEntry = createRequire(import.meta.url).resolve('@deepseek-ai/dsh/lib/bin.js')
     const overlays = await hostBundlePatchOverlayPaths(dshEntry)
     expect(overlays).toHaveLength(1)
-    expect(overlays[0]).toContain('dsh-desktop-compaction-fast-jev')
+    expect(overlays[0]).toContain('dsh-desktop-compaction-fast-compact')
     expect(overlays[0]).toContain('cordis.patch.yml')
     const content = await readFile(overlays[0] ?? '', 'utf8')
     expect(content).toContain('- id: preset-standard')
-    expect(content).toContain('compaction-fast-jev')
+    expect(content).toContain('compaction-fast-compact')
   })
 
   it('skips overlays the installation cannot resolve instead of failing boot', async () => {
@@ -144,7 +144,7 @@ describe('Desktop host bundle patch overlays', () => {
 
   it('drops overlays of disabled host plugins so their override stops composing', async () => {
     const dshEntry = createRequire(import.meta.url).resolve('@deepseek-ai/dsh/lib/bin.js')
-    const overlays = await hostBundlePatchOverlayPaths(dshEntry, ['dsh-desktop-compaction-fast-jev'])
+    const overlays = await hostBundlePatchOverlayPaths(dshEntry, ['dsh-desktop-compaction-fast-compact'])
     expect(overlays).toEqual([])
   })
 })

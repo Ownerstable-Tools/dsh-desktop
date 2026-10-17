@@ -1,7 +1,7 @@
 # Overrides the shipped `preset-standard`, `preset-cordis` and `preset-ptc`
 # agent presets (from @deepseek-ai/dsh-web-app presets/*.patch.yml) with exactly
 # one change each: inside the `compaction` group, the `compaction-basic` backend
-# row is replaced by `compaction-fast-jev`, the Jev-pruned verbatim backend from
+# row is replaced by `compaction-fast-compact`, the cut-and-archive backend from
 # this package. command-compact and tool-result-pruner, the group's isolate map,
 # and every other preset row are restated verbatim.
 #
@@ -76,13 +76,11 @@
           compaction: true
           toolResultPruner: true
         config:
-          - id: compaction-fast-jev
-            name: 'dsh-desktop-compaction-fast-jev'
+          - id: compaction-fast-compact
+            name: 'dsh-desktop-compaction-fast-compact'
             config:
-              jev:
-                preserveRecentMessages: 6
-                maxStateTokens: 27000
-                maxRequestTokens: 32000
+              fastCompact:
+                provider: typesafe
           - id: command-compact
             name: '@deepseek-ai/dsh-command-compact'
           - id: tool-result-pruner
@@ -222,13 +220,11 @@
           compaction: true
           toolResultPruner: true
         config:
-          - id: compaction-fast-jev
-            name: 'dsh-desktop-compaction-fast-jev'
+          - id: compaction-fast-compact
+            name: 'dsh-desktop-compaction-fast-compact'
             config:
-              jev:
-                preserveRecentMessages: 6
-                maxStateTokens: 27000
-                maxRequestTokens: 32000
+              fastCompact:
+                provider: typesafe
           - id: command-compact
             name: '@deepseek-ai/dsh-command-compact'
           - id: tool-result-pruner
@@ -378,13 +374,11 @@
           compaction: true
           toolResultPruner: true
         config:
-          - id: compaction-fast-jev
-            name: 'dsh-desktop-compaction-fast-jev'
+          - id: compaction-fast-compact
+            name: 'dsh-desktop-compaction-fast-compact'
             config:
-              jev:
-                preserveRecentMessages: 6
-                maxStateTokens: 27000
-                maxRequestTokens: 32000
+              fastCompact:
+                provider: typesafe
           - id: command-compact
             name: '@deepseek-ai/dsh-command-compact'
           - id: tool-result-pruner

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Fast Compact",
+    "description": "Replaces the LLM compaction summary with the compacted span kept verbatim, except that old tool output is cut to its start and end and saved to a file named in its place; Jev optionally keeps whole what is still needed, and the built-in summary runs only when the cut cannot help."
+  }
+}
