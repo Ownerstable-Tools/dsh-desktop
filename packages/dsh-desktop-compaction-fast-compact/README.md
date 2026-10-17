@@ -79,20 +79,20 @@ a safety net, not a guarantee.
 Cuts are saved under `<DSH_HOME>/fast-compact/<session id>/`
 (`fastCompact.archiveDir` overrides the root), one file per cut, created
 private. When the checkpoint would exceed `maxCheckpointChars`, the oldest
-messages are left out of it and the whole cut span is saved beside the cuts as
-`span-<time>.txt`; the checkpoint names that file. The agent needs a file-read
-or shell tool that can reach the archive folder to read cuts back. Nothing is
-deleted automatically; to clear sessions older than a month:
-
-```sh
-find ~/.dsh/fast-compact -mindepth 1 -maxdepth 1 -type d -mtime +30 -exec rm -r {} +
-```
+messages are left out of it and the whole span as cut is saved beside the cuts as
+`span-<time>.txt`; the checkpoint names that file. If the newest message
+alone is over the ceiling, the built-in summary runs instead. The agent needs a file-read
+or shell tool that can reach the archive folder to read cuts back. The files hold
+full tool output, which can include secrets a tool printed; they stay on this
+machine, readable only by you. Nothing is deleted automatically. Remove a
+session's folder only once you no longer resume that session: its checkpoint
+points at those files.
 
 ## Tunables (row `config.fastCompact`, all optional)
 
 | Key | Default | Meaning |
 |---|---|---|
-| `provider` | `openrouter` (rows pin `typesafe`) | `openrouter`, `typesafe`, or `none`; any other value counts as `none` |
+| `provider` | `none` (rows pin `typesafe`) | `typesafe`, `openrouter`, or `none`; any other value counts as `none`. Jev is never asked unless a provider is named |
 | `apiKey` / `apiKeyFile` / `baseUrl` | — / by provider / the provider's | key and endpoint |
 | `model` | `jev-latest` | Jev model |
 | `archiveDir` | `<DSH_HOME or ~/.dsh>/fast-compact` | where cuts are saved |

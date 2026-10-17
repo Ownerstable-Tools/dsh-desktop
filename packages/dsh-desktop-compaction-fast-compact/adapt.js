@@ -66,20 +66,17 @@ function str(value) {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined
 }
 
-/**
- * Row `config.fastCompact` → settings, with fast-compact's defaults and
- * clamps. Anything but a known provider sends nothing: a mistyped `none` must
- * not reach a Jev endpoint.
- */
+/** Row `config.fastCompact` → settings, with fast-compact's defaults and clamps. */
 export function settingsOf(raw = {}) {
+  // Jev is opt-in: with no provider named, nothing is sent even when a key
+  // happens to be in the environment. Anything but a known provider sends
+  // nothing either: a mistyped `none` must not reach a Jev endpoint.
   const named = str(raw.provider)?.toLowerCase()
-  const provider = named === undefined || named === 'openrouter'
-    ? 'openrouter'
-    : named === 'typesafe' ? 'typesafe' : 'none'
+  const provider = named === 'openrouter' || named === 'typesafe' ? named : 'none'
   const d = DEFAULT_OPTIONS
   return {
     provider,
-    providerNote: provider === 'none' && named !== 'none' && named !== 'off'
+    providerNote: provider === 'none' && named !== undefined && named !== 'none' && named !== 'off'
       ? `unknown provider "${named}"`
       : undefined,
     url: str(raw.baseUrl) ?? (provider === 'none' ? '' : ENDPOINTS[provider]),
@@ -155,6 +152,7 @@ export function makeFetchTransport({ fetchImpl, requestTimeoutSeconds, signal } 
 
 /** Parse a tool-call `arguments` JSON string; unparsable input survives raw. */
 function parseArguments(raw) {
+  if (raw !== null && typeof raw === 'object' && !Array.isArray(raw)) return raw
   if (typeof raw !== 'string' || raw.length === 0) return {}
   try {
     const parsed = JSON.parse(raw)
@@ -200,6 +198,11 @@ export function mapSpanMessages(messages) {
     if (message === null || typeof message !== 'object') continue
     if (message.role === 'system') continue
     if (message.role === 'tool') {
+      // A cut is archived under its tool call id; without one two outputs
+      // would share a file.
+      if (message.toolCallId === undefined || message.toolCallId === null || message.toolCallId === '') {
+        throw new FastCompactFallbackError('a tool result has no tool call id')
+      }
       mapped.push({
         role: 'user',
         text: '',
@@ -215,6 +218,9 @@ export function mapSpanMessages(messages) {
     const toolUses = []
     for (const block of message.content ?? []) {
       if (block !== null && typeof block === 'object' && block.type === 'tool-call') {
+        if (block.id === undefined || block.id === null || block.id === '') {
+          throw new FastCompactFallbackError('a tool call has no id')
+        }
         toolUses.push({
           tool_use_id: String(block.id),
           tool: String(block.name ?? 'tool'),
@@ -339,7 +345,7 @@ export function renderTranscript(messages, header, budgetChars, spanFile) {
   if (stubbed > 0) {
     lines.push(
       `[fast-compact: the ${stubbed} oldest message(s) of this span are left out to keep this checkpoint `
-      + `within ${budgetChars} chars; the whole span is in ${spanFile} — read it before relying on them]`,
+      + `within ${budgetChars} chars; the whole span as cut is in ${spanFile} — read it before relying on them]`,
     )
   }
   lines.push('')
@@ -350,7 +356,8 @@ export function renderTranscript(messages, header, budgetChars, spanFile) {
  * Run one fast-compact pass over a DSH span.
  * @param spanMessages - derived messages of the span, optionally led by the system head.
  * @param settings - from `settingsOf`.
- * @param env - `{ sessionId, transport, now }`; `transport` absent means no Jev.
+ * @param env - `{ sessionId, transport, now, signal }`; `transport` absent means no Jev;
+ *   an aborted `signal` stops the pass before anything is written.
  * @returns the checkpoint text plus the decision, sizes and archive dir.
  * @throws FastCompactFallbackError when the span is too small, nothing can be
  *   cut, or the cut frees less than `minFreedRatio`; archive write failures
@@ -376,6 +383,7 @@ export async function fastCompactSummarize(spanMessages, settings, env = {}) {
     )
   }
 
+  if (env.signal?.aborted) throw env.signal.reason
   const stamp = stampOf(env.now)
   const dir = join(settings.archiveDir ?? defaultArchiveRoot(), safeName(String(env.sessionId ?? 'session')))
   // Nothing is cut before its full text is on disk; a failed write fails the
@@ -396,6 +404,12 @@ export async function fastCompactSummarize(spanMessages, settings, env = {}) {
       : '')
     + '.'
   const { text, stubbed } = renderTranscript(after, header, settings.maxCheckpointChars, spanFile)
+  if (text.length > settings.maxCheckpointChars + header.length + 1000) {
+    // The newest message alone is over the ceiling; the chat UI would blank on it.
+    throw new FastCompactFallbackError(
+      `checkpoint ${text.length} chars exceeds limit ${settings.maxCheckpointChars} even with older messages left out`,
+    )
+  }
   if (stubbed > 0) writeFileSync(spanFile, after.map(renderMessage).join('\n'), { mode: 0o600 })
   return {
     text,

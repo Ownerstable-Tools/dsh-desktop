@@ -83,8 +83,9 @@ await test('mapSpanMessages drops the system head and reasoning, pairs tool resu
 
 await test('settingsOf: defaults, clamps, unknown provider sends nothing', () => {
   const d = settingsOf({})
-  assert.equal(d.provider, 'openrouter')
-  assert.equal(d.url, 'https://openrouter.ai/api/v1/systemone')
+  assert.equal(d.provider, 'none', 'Jev is opt-in')
+  assert.equal(d.providerNote, undefined)
+  assert.equal(settingsOf({ provider: 'openrouter' }).url, 'https://openrouter.ai/api/v1/systemone')
   assert.equal(d.options.keepRecentCalls, 10)
   assert.equal(d.options.cutTo, 1500)
   assert.equal(d.minFreedRatio, 0.2)
@@ -102,11 +103,11 @@ await test('resolveApiKey: config, then env, then key file; none for provider no
   const saved = process.env.OPENROUTER_API_KEY
   try {
     delete process.env.OPENROUTER_API_KEY
-    assert.equal(resolveApiKey(settingsOf({ apiKey: 'cfg', apiKeyFile: file })), 'cfg')
-    assert.equal(resolveApiKey(settingsOf({ apiKeyFile: file })), 'from-file')
-    assert.equal(resolveApiKey(settingsOf({ apiKeyFile: `${file}.missing` })), undefined)
+    assert.equal(resolveApiKey(settingsOf({ provider: 'openrouter', apiKey: 'cfg', apiKeyFile: file })), 'cfg')
+    assert.equal(resolveApiKey(settingsOf({ provider: 'openrouter', apiKeyFile: file })), 'from-file')
+    assert.equal(resolveApiKey(settingsOf({ provider: 'openrouter', apiKeyFile: `${file}.missing` })), undefined)
     process.env.OPENROUTER_API_KEY = 'from-env'
-    assert.equal(resolveApiKey(settingsOf({ apiKeyFile: file })), 'from-env')
+    assert.equal(resolveApiKey(settingsOf({ provider: 'openrouter', apiKeyFile: file })), 'from-env')
     assert.equal(resolveApiKey(settingsOf({ provider: 'none', apiKey: 'cfg' })), undefined)
   } finally {
     if (saved === undefined) delete process.env.OPENROUTER_API_KEY
@@ -206,6 +207,28 @@ await test('falls back when the span is small, nothing is cuttable, or too littl
     fastCompactSummarize(testSpan(), settings({ minFreedRatio: 0.99 }), {}),
     e => e instanceof FastCompactFallbackError && /below minimum 99%/.test(e.message),
   )
+})
+
+await test('tool ids are required, an oversized newest message falls back, abort writes nothing', async () => {
+  const noId = testSpan()
+  delete noId[3].toolCallId
+  await assert.rejects(
+    fastCompactSummarize(noId, settings(), {}),
+    e => e instanceof FastCompactFallbackError && /no tool call id/.test(e.message),
+  )
+  const huge = testSpan()
+  huge.push({ role: 'assistant', content: [{ type: 'text', text: 'y'.repeat(20000) }] })
+  await assert.rejects(
+    fastCompactSummarize(huge, settings({ maxCheckpointChars: 8000 }), {}),
+    e => e instanceof FastCompactFallbackError && /exceeds limit 8000/.test(e.message),
+  )
+  const s = settings()
+  const controller = new AbortController()
+  controller.abort(new Error('cancelled'))
+  await assert.rejects(fastCompactSummarize(testSpan(), s, { sessionId: 'ab', signal: controller.signal }), /cancelled/)
+  assert.deepEqual(readdirSync(s.archiveDir), [])
+  const objectArgs = mapSpanMessages([{ role: 'assistant', content: [{ type: 'tool-call', id: 'o', name: 'X', arguments: { a: 1 } }] }])
+  assert.deepEqual(objectArgs[0].toolUses[0].input, { a: 1 })
 })
 
 await test('checkpoint ceiling stubs the oldest messages and saves the whole span', async () => {

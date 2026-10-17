@@ -58,7 +58,7 @@ export class FastCompactEngine extends BasicCompactionEngine {
     })),
     auto: z.boolean(),
     fastCompact: z.object({
-      /** `openrouter` (default), `typesafe`, or `none`: never ask Jev. Any other value counts as `none`. */
+      /** `typesafe`, `openrouter`, or `none` (default): never ask Jev. Any other value counts as `none`. */
       provider: z.string(),
       /** Jev key; falls back to OPENROUTER_API_KEY / TYPESAFE_API_KEY, then to a key file. */
       apiKey: z.string(),
@@ -124,6 +124,7 @@ export class FastCompactEngine extends BasicCompactionEngine {
       const outcome = await fastCompactSummarize(input.messages, this.settings, {
         sessionId: agent?.session?.id,
         transport,
+        signal,
       })
       if (signal?.aborted) throw signal.reason
       const { decision, counts } = outcome
