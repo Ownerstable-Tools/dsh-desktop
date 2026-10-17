@@ -14,7 +14,7 @@ The desktop still uses Harness packages installed by npm.
   license retained under the adapter's `vendor/fast-compact/`).
 - Standard, Cordis and PTC preset overrides match this Harness version.
 
-The separate [fast-compact](https://github.com/NodarDavituri/fast-compact)
+The separate [fast-compact fork](https://github.com/OwnersTable-Tools/fast-compact)
 plugin is for Claude Code. Do not install the standalone DSH adapter alongside this
 bundled adapter: both would override the same presets.
 
