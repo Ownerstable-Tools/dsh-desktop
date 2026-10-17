@@ -25,7 +25,7 @@ index 4f16dfb..a821e87 100644
 +    "@deepseek-ai/dsh-deepseek-account": "0.2.0-rc.2",
 +    "dsh-ppt-composer": "0.1.1-rc.2",
 +    "dsh-desktop-client-ui": "0.1.0",
-+    "dsh-desktop-compaction-fast-jev": "0.1.0",
++    "dsh-desktop-compaction-fast-compact": "0.2.0",
 +    "dsh-desktop-hmr-fallback": "0.1.0",
 +    "dsh-desktop-log-bridge": "0.1.0",
 +    "dsh-desktop-market-installer": "0.1.0",

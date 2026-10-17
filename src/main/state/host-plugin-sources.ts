@@ -125,7 +125,7 @@ export async function prepareHostPluginSourcesPatch(
  * duplicate installation enters Recovery), and the PPT packages are
  * host-composed layers of their own (`HOST_COMPOSED_BUNDLES`).
  */
-const HOST_BUNDLE_PATCH_OVERLAYS = ['dsh-desktop-compaction-fast-jev'] as const
+const HOST_BUNDLE_PATCH_OVERLAYS = ['dsh-desktop-compaction-fast-compact'] as const
 
 /**
  * Absolute patch files of {@link HOST_BUNDLE_PATCH_OVERLAYS} as shipped by the

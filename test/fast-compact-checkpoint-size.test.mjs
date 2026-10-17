@@ -5,7 +5,11 @@ import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import TokenMeter from '@deepseek-ai/dsh-token-meter'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { BasicCompactionEngine } from '@deepseek-ai/dsh-compaction-basic'
-import { JevCompactionEngine } from '../packages/dsh-desktop-compaction-fast-jev/index.js'
+import { FastCompactEngine } from '../packages/dsh-desktop-compaction-fast-compact/index.js'
+import { settingsOf } from '../packages/dsh-desktop-compaction-fast-compact/adapt.js'
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
 
@@ -46,19 +50,29 @@ it.each([false, undefined, true])('honors the host size preflight result %s', as
   const fallback = { summary: [{ type: 'text', text: 'Stock summary' }], provider: 'stock', model: 'stock' }
   vi.spyOn(BasicCompactionEngine.prototype, 'summarize').mockResolvedValue(fallback)
   const engine = {
-    jevOptions: { apiKey: 'synthetic-test-key', preserveRecentMessages: 1 },
+    settings: settingsOf({
+      provider: 'typesafe',
+      apiKey: 'synthetic-test-key',
+      keepRecentCalls: 1,
+      archiveDir: mkdtempSync(join(tmpdir(), 'fast-compact-preflight-')),
+    }),
     ctx: { logger: { info() {}, warn() {}, debug() {} } }
   }
+  const call = (id) => [
+    { role: 'assistant', content: [{ type: 'tool-call', id, name: 'Read', arguments: '{}' }] },
+    { role: 'tool', toolCallId: id, content: [{ type: 'text', text: `${id} ` + 'x'.repeat(5000) }] },
+  ]
   const input = { canAcceptSummary: accepted === undefined ? undefined : () => accepted, messages: [
     { role: 'user', content: [{ type: 'text', text: 'Keep this constraint' }] },
-    { role: 'assistant', content: [{ type: 'tool-call', id: 't1', name: 'Read', arguments: '{}' }] },
-    { role: 'tool', toolCallId: 't1', content: [{ type: 'text', text: 'x'.repeat(5000) }] },
+    ...call('t1'), ...call('t2'), ...call('t3'),
     { role: 'user', content: [{ type: 'text', text: 'Continue' }] }
   ] }
-  const result = await JevCompactionEngine.prototype.summarize.call(engine, input, {}, new AbortController().signal)
+  const result = await FastCompactEngine.prototype.summarize.call(
+    engine, input, { session: { id: 'preflight' } }, new AbortController().signal)
   if (accepted === true) {
-    expect(result.provider).toBe('typesafe-jev')
+    expect(result.provider).toBe('fast-compact/typesafe')
     expect(result.summary[0].text).toContain('Keep this constraint')
+    expect(result.summary[0].text).toContain('[fast-compact: cut ')
   } else {
     expect(result).toEqual(fallback)
   }
