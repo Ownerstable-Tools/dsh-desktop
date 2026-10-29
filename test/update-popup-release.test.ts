@@ -4,6 +4,9 @@ import { describe, expect, it } from 'vitest'
 import { encodePopupNotesMetadata, popupReleaseNotes } from '../src/shared/update-release-notes'
 
 const root = process.cwd()
+// Python text-mode stdout writes os.linesep, so Windows turns each printed \n into \r\n.
+const platformStdout = (text: string, platform: NodeJS.Platform = process.platform) =>
+  platform === 'win32' ? text.replace(/\r\n/g, '\n') : text
 
 describe('localized update popup', () => {
   it('selects both languages, rejects malformed metadata and preserves legacy notes', () => {
@@ -17,8 +20,19 @@ describe('localized update popup', () => {
 })
 
 describe('release approval gate', () => {
+  it('normalizes only Windows stdout line endings and still rejects a wrong diff', () => {
+    const diff = '<diff>- rc.2\n+ rc.3</diff>'
+    const lf = `prompt\n${diff}\n`
+    const crlf = lf.replace(/\n/g, '\r\n')
+    expect(platformStdout(lf, 'linux')).toContain(diff)
+    expect(platformStdout(lf, 'win32')).toContain(diff)
+    expect(platformStdout(crlf, 'win32')).toContain(diff)
+    expect(platformStdout(crlf, 'linux')).not.toContain(diff)
+    expect(platformStdout('<diff>- rc.2\r\n+ rc.4</diff>\r\n', 'win32')).not.toContain(diff)
+    expect(platformStdout('<diff>- rc.2\r\r\n+ rc.3</diff>\r\n', 'win32')).not.toContain(diff)
+  })
   it('prioritizes evidenced Harness changes in the confirmation draft', () => {
-    const output = execFileSync('python3', ['-c', `
+    const output = platformStdout(execFileSync('python3', ['-c', `
 import sys
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -28,7 +42,7 @@ with patch.object(update_popup_notes, 'collect_release_evidence', return_value=S
     release_range='v1.0..v1.1', commit_details='upgrade Harness',
     diff_summary='package.json', code_diff='- rc.2\\n+ rc.3')):
     print(update_popup_notes.prompt('v1.1'))
-`], { cwd: root, encoding: 'utf8' })
+`], { cwd: root, encoding: 'utf8' }))
     expect(output).toContain('必须在靠前位置单独列出')
     expect(output).toContain('中英文均保留 Harness 名称及相同版本')
     expect(output).toContain('没有证据时不添加此项')
