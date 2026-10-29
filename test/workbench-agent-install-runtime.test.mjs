@@ -46,7 +46,7 @@ export function apply(ctx) {
   const runtime = new HarnessRuntime({
     dshEntryPath: join(root, 'node_modules/@deepseek-ai/dsh/lib/bin.js'), nodeEntryPath: join(root, 'build/harness-node-entry.mjs'),
     nodeExecutablePath: electronExecutable(root), pnpmEntryPath: join(root, 'node_modules/pnpm/bin/pnpm.cjs'),
-    dshPatchPath: patch, dshSafePatchPath: patch, dshHome: home, logPath: join(home, 'harness.log'), startupTimeoutMs: 30_000,
+    dshPatchPath: patch, dshSafePatchPath: patch, dshHome: home, logPath: join(home, 'harness.log'), startupTimeoutMs: 30_000, preferredPort: 0,
     launchProcess: (executable, args, options) => spawn(executable, args, { ...options, env: { ...options.env, ELECTRON_RUN_AS_NODE: '1' } }), onChanged() {}
   })
   try {

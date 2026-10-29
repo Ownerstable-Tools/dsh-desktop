@@ -191,6 +191,9 @@ export async function apply(ctx) {
     dshHome: home,
     logPath: join(home, 'harness.log'),
     startupTimeoutMs: 30_000,
+    // Parallel real-runtime tests must not race for DEFAULT_HARNESS_PORT; reserveLoopbackPort
+    // closes its probe before the child binds, so an OS-assigned ephemeral port is the only safe choice.
+    preferredPort: 0,
     // Node mode here uses the same real Electron runtime as the packaged CLI.
     launchProcess: (executable, args, options) => spawn(executable, args, { ...options, env: { ...options.env, ELECTRON_RUN_AS_NODE: '1' } }),
     onChanged() {}
@@ -296,6 +299,9 @@ it('reports a missing Office payload during activation and keeps Safe Mode usabl
     dshHome: home,
     logPath: join(home, 'harness.log'),
     startupTimeoutMs: 30_000,
+    // Parallel real-runtime tests must not race for DEFAULT_HARNESS_PORT; reserveLoopbackPort
+    // closes its probe before the child binds, so an OS-assigned ephemeral port is the only safe choice.
+    preferredPort: 0,
     launchProcess: (executable, args, options) => {
       const child = spawn(executable, args, { ...options, env: { ...options.env, ELECTRON_RUN_AS_NODE: '1' } })
       // A rejected launch is detached before its asynchronous shutdown finishes.

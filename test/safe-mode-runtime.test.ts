@@ -45,6 +45,7 @@ registerHooks({ resolve(specifier, context, next) {
     dshHome: home,
     logPath: join(home, logName),
     startupTimeoutMs: 30_000,
+    preferredPort: 0,
     launchProcess: (executable, args, options) => spawn(executable, ['--import', pathToFileURL(hook).href, ...args], options),
     onChanged() {}
   })
