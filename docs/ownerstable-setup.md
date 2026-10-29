@@ -7,7 +7,7 @@ The desktop still uses Harness packages installed by npm.
 
 ## Versions shipped together
 
-- Harness packages: `0.2.0-rc.2`, pinned in `package-lock.json`.
+- Harness packages: `0.2.1-rc.3`, pinned in `package-lock.json`.
 - Desktop adapter: `dsh-desktop-compaction-fast-jev` `0.1.0`.
 - Vendored Fast Jev library: `0.2.0`, upstream commit `e3f262a` (MIT license
   retained under the adapter's `vendor/fast-jev/`).

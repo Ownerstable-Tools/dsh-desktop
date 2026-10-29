@@ -147,8 +147,11 @@ export class DesktopService {
     }
   }
 
-  async checkUpdate(): Promise<UpdateDecision> {
+  // A user-initiated check asks the policy service to bypass percentage rollout.
+  // Server-side version, platform, enabled-release, and archive validation remain mandatory.
+  async checkUpdate(manual = false): Promise<UpdateDecision> {
     const query = new URLSearchParams({ installationId: this.installationId, currentVersion: this.options.version, platform: this.platform })
+    if (manual) query.set('manual', 'true')
     const response = await this.options.request(`${SERVICE_URL}/v1/updates/check?${query}`, { signal: AbortSignal.timeout(5000), redirect: 'error' })
     if (!response.ok) throw new Error(`Update policy unavailable (${response.status})`)
     const policy = await response.json() as Record<string, unknown>

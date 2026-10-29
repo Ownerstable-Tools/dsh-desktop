@@ -128,14 +128,14 @@ upgrade of the `@deepseek-ai/*` packages that changes the shipped
   omitted.
 - `index.js` / `jev-adapt.js` / `test/smoke.mjs`: ported unchanged from that
   bundle (only machine-path references in comments updated).
-- Pinned preset lists: generated from `@deepseek-ai/dsh-web-app@0.2.0-rc.2`
+- Pinned preset lists: generated from `@deepseek-ai/dsh-web-app@0.2.1-rc.3`
   (the version this repo's lockfile installs) via
   `scripts/regenerate-presets.py`.
 
 
 ## Checkpoint size compatibility patch
 
-`patches/@deepseek-ai+dsh-compaction-basic+0.2.0-rc.2.patch` adds an optional
+`patches/@deepseek-ai+dsh-compaction-basic+0.2.1-rc.3.patch` adds an optional
 `canAcceptSummary` callback to the host summarizer input. It checks the
 host-framed checkpoint using the selected span's exact token budget. This
 lets Jev decline an expanding result while its stock-summary fallback is
@@ -144,3 +144,8 @@ The adapter falls back if the callback is missing. Remove or adapt this patch
 when upstream exposes an equivalent preflight contract. Regression coverage
 is in `test/jev-checkpoint-size.test.mjs`, including a real durable session
 replacement through the patched host.
+
+The chat expander shows these checkpoints as plain text rather than
+Markdown; that change is a hunk in
+`patches/@deepseek-ai+dsh-client-ui-chat+0.2.1-rc.3.patch`, covered by
+`test/compaction-summary-render-patch.test.ts`.

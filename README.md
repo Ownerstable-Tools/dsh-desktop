@@ -4,13 +4,13 @@
 > downloads below do not include this fork's changes.
 
 <h1 align="center">
-  <img src="docs/images/readme-logo-black-v020.png" width="64" alt="DSH Desktop logo" valign="middle" />
+  <img src="docs/images/readme-logo-black-rounded.svg" width="64" alt="DSH Desktop logo" valign="middle" />
   DSH Desktop
 </h1>
 
 <p align="center">
-  A local-first, cross-platform desktop app for
-  <a href="https://github.com/deepseek-ai/deepseek-harness">DeepSeek Harness</a>.
+  <strong>DSH Desktop by Dataelem</strong> is a desktop Agent application built by the Dataelem team on the DeepSeek Harness framework, available in open-source and enterprise editions.<br />
+  Website: <a href="https://www.dshdesktop.com/">www.dshdesktop.com</a> · Open-source repository: <a href="https://github.com/dataelement/dsh-desktop">dataelement/dsh-desktop</a>
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 DSH Desktop packages the local DeepSeek Harness experience as an installed desktop application. It starts Harness automatically, keeps profiles, plugins, workspaces, model settings, and sessions outside the application directory, and opens the full Harness interface as soon as the local runtime is ready.
 
 > [!IMPORTANT]
-> DSH Desktop is an early preview built on the rapidly evolving `@deepseek-ai/dsh@0.2.0-rc.2`. macOS releases are code-signed and notarized by Apple. Windows x64 installers are code-signed; Windows security warnings may still decrease gradually as the publisher builds download and installation reputation.
+> DSH Desktop is an early preview built on the rapidly evolving `@deepseek-ai/dsh@0.2.1-rc.3`. macOS releases are code-signed and notarized by Apple. Windows x64 installers are code-signed; Windows security warnings may still decrease gradually as the publisher builds download and installation reputation.
 
 ## Download
 

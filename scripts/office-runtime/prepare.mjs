@@ -65,6 +65,47 @@ export async function unpackWheel(archive, destination) {
   }
 }
 
+async function stripUnusedPythonPayload(dependencies, pythonLib, sitePackages) {
+  // Strip C development headers not needed at runtime.
+  await rm(join(dependencies, 'python', 'include'), { recursive: true, force: true })
+  // Strip unused GUI, package manager, and demo modules from Python standard library.
+  const unusedStdlib = [
+    join(pythonLib, 'ensurepip'),
+    join(pythonLib, 'idlelib'),
+    join(pythonLib, 'tkinter'),
+    join(pythonLib, 'turtledemo'),
+    join(pythonLib, 'turtle.py')
+  ]
+  for (const item of unusedStdlib) {
+    await rm(item, { recursive: true, force: true })
+  }
+  // Strip heavy test suites, build/packaging tools, and development modules in site-packages.
+  const unusedSitePackages = [
+    join(sitePackages, 'pandas', 'tests'),
+    join(sitePackages, 'numpy', 'tests'),
+    join(sitePackages, 'numpy', 'testing'),
+    join(sitePackages, 'numpy', 'f2py'),
+    join(sitePackages, 'numpy', '_core', 'tests'),
+    join(sitePackages, 'numpy', 'typing', 'tests'),
+    join(sitePackages, 'numpy', 'lib', 'tests'),
+    join(sitePackages, 'numpy', 'random', 'tests'),
+    join(sitePackages, 'numpy', 'ma', 'tests'),
+    join(sitePackages, 'numpy', 'polynomial', 'tests'),
+    join(sitePackages, 'numpy', 'linalg', 'tests'),
+    join(sitePackages, 'numpy', 'matrixlib', 'tests'),
+    join(sitePackages, 'numpy', 'fft', 'tests'),
+    join(sitePackages, 'numpy', '_pyinstaller', 'tests')
+  ]
+  for (const directory of unusedSitePackages) {
+    await rm(directory, { recursive: true, force: true })
+  }
+  // Strip unused helper binaries.
+  const binDir = join(dependencies, 'python', 'bin')
+  for (const name of ['idle3', 'idle3.12', 'pydoc3', 'pydoc3.12']) {
+    await rm(join(binDir, name), { force: true })
+  }
+}
+
 /** Always assemble this build's payload. Keep only verified downloads as cache. */
 export async function prepareOfficeRuntime({ target = officeTarget(), output = join(project, '.build/office-runtime'), cache = join(project, '.build/office-downloads') } = {}) {
   const artifact = lock.targets[target]
@@ -82,10 +123,12 @@ export async function prepareOfficeRuntime({ target = officeTarget(), output = j
     const url = `https://github.com/astral-sh/python-build-standalone/releases/download/${lock.pythonRelease}/${encodeURIComponent(filename)}`
     await extractTar({ file: await downloadAsset(url, artifact.pythonSha256, cache), cwd: dependencies })
     const windows = target === 'win-x64'
-    const sitePackages = join(dependencies, 'python', ...(windows ? ['Lib'] : ['lib', `python${lock.pythonVersion.split('.').slice(0, 2).join('.')}`]), 'site-packages')
+    const pythonLib = join(dependencies, 'python', ...(windows ? ['Lib'] : ['lib', `python${lock.pythonVersion.split('.').slice(0, 2).join('.')}`]))
+    const sitePackages = join(pythonLib, 'site-packages')
     for (const wheel of [...artifact.wheels, ...lock.wheels]) {
       await unpackWheel(await downloadAsset(wheel.url, wheel.sha256, cache), sitePackages)
     }
+    await stripUnusedPythonPayload(dependencies, pythonLib, sitePackages)
     const manifest = {
       desktopVersion: version,
       platform: windows ? 'win32' : 'darwin',
@@ -97,6 +140,7 @@ export async function prepareOfficeRuntime({ target = officeTarget(), output = j
     await writeFile(join(runtime, 'runtime.json'), `${JSON.stringify(manifest, null, 2)}\n`)
     const skillRoot = dirname(require.resolve('@deepseek-ai/dsh-skill-office/package.json'))
     await cp(join(skillRoot, 'assets'), join(staging, 'office-skills'), { recursive: true, dereference: true })
+    await cp(join(project, 'packages/dsh-desktop-office/business-skills'), join(staging, 'business-skills'), { recursive: true })
     // Keep upstream skills intact; add the Windows packaging constraint at the
     // generated deployment boundary, where all three workflows can see it.
     for (const skill of ['office-docx', 'office-pptx', 'office-xlsx']) {
@@ -104,8 +148,8 @@ export async function prepareOfficeRuntime({ target = officeTarget(), output = j
       const source = await readFile(path, 'utf8')
       const route = skill === 'office-pptx'
         ? '\n\n## Desktop PPT workflow\n\nUse this general presentation workflow in ordinary conversation. When the current Desktop PPT composer state enables PPT mode, follow the dsh-ppt skill and selected template, using pptd_* tools and pptd_render. Do not recreate a template deck with python-pptx or switch engines after validation/export failure. Follow an explicit user request to change workflows; otherwise retain the active route.\n'
-        : ''
-      await writeFile(path, `${source}${route}\n\n## Desktop runtime\n\nCall load_workspace_dependencies and use its absolute Python path. For the general Office workflow, generate files with python-docx, python-pptx, openpyxl or XlsxWriter; the active Desktop PPT template workflow keeps its PPTD tools. Do not hand-assemble OOXML with Windows PowerShell Compress-Archive: its ZIP entries can contain backslashes and fail Office preview. For deliberate low-level OOXML work, use Python zipfile with forward-slash entry names.\n\nThe supplied LibreOffice Kit node is the Desktop Electron runtime in Node mode. Set ELECTRON_RUN_AS_NODE=1 when invoking it (POSIX: prefix the command with ELECTRON_RUN_AS_NODE=1; PowerShell: set $env:ELECTRON_RUN_AS_NODE='1' before & <node> <cli>). Keep the supplied CLI path; it resolves the bundled engine outside ASAR.\n`)
+        : skill === 'office-docx' ? '\n\n## Desktop Word template workflow\n\nWhen the current Desktop Word composer selects a template, call office_template and use its editable_paragraphs with office_template_write. Fill current issuing organizations and content using replacements, additions cloned from template paragraphs, and removals for unused paragraphs. The Host preserves native page geometry, embedded fonts, borders and page-number footers and checks the current DOCX again at present. Use office-docx for native chart/image updates, content review and rendering of that resulting DOCX. Ordinary Word tasks use the general creation workflow.\n' : ''
+      await writeFile(path, `${source}${route}\n\n## Desktop runtime\n\nCall load_workspace_dependencies and use its absolute Python path. For the general Office workflow, generate files with python-docx, python-pptx, openpyxl or XlsxWriter; active Desktop templates use pptd_* tools for PPT and office_template_write for Word. Do not hand-assemble OOXML with Windows PowerShell Compress-Archive: its ZIP entries can contain backslashes and fail Office preview. For deliberate low-level OOXML work, use Python zipfile with forward-slash entry names.\n\nThe supplied LibreOffice Kit node is the Desktop Electron runtime in Node mode. Set ELECTRON_RUN_AS_NODE=1 when invoking it (POSIX: prefix the command with ELECTRON_RUN_AS_NODE=1; PowerShell: set $env:ELECTRON_RUN_AS_NODE='1' before & <node> <cli>). Keep the supplied CLI path; it resolves the bundled engine outside ASAR.\n`)
     }
     await rename(staging, output)
     console.log(`Office runtime prepared: ${manifest.platform}/${manifest.arch}, Python ${manifest.python}`)
