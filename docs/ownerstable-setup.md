@@ -13,9 +13,8 @@ The desktop still uses Harness packages installed by npm.
   retained under the adapter's `vendor/fast-jev/`).
 - Standard, Cordis and PTC preset overrides match this Harness version.
 
-The separate [fast-jev-compaction fork](https://github.com/OwnersTable-Tools/fast-jev-compaction)
-is for Claude Code. Do not install the standalone DSH adapter alongside this
-bundled adapter: both would override the same presets.
+Do not install the standalone DSH adapter alongside this bundled adapter:
+both would override the same presets.
 
 ## Build on your machine
 
@@ -46,8 +45,7 @@ Supply a TypeSafe API key through `TYPESAFE_API_KEY` in the Harness process
 environment or through the adapter's `jev.apiKey` configuration. For a GUI
 launch, the adapter also reads `~/.typesafe_key`; put only the key in this
 machine-local file and restrict its permissions with `chmod 600 ~/.typesafe_key`.
-Never commit credentials. The Claude plugin has its own key configuration;
-it does not automatically read this desktop key file.
+Never commit credentials.
 
 In **Plugins → Desktop plugins**, enable **Fast Jev compaction** and restart
 Harness if prompted. Use a Standard, Cordis or PTC agent; the Minimal preset
