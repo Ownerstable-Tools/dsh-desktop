@@ -33,8 +33,9 @@ The bundle's `cordis.patch.yml` overrides the `preset-standard`,
 `preset-cordis` and `preset-ptc` agent presets with pinned copies of the
 shipped lists from `@deepseek-ai/dsh-web-app` `presets/*.patch.yml`, each with
 exactly one change: inside the `compaction` group, `compaction-basic` →
-`compaction-fast-jev`. `minimal` ships no compaction rows, so there is nothing
-to swap there. Safe Mode (`build/dsh-desktop-safe.patch.yml`) intentionally
+`compaction-fast-jev`. `minimal` also ships a `compaction` group with
+`compaction-basic`, but it is not overridden, so Minimal agents keep the stock
+summarizer. Safe Mode (`build/dsh-desktop-safe.patch.yml`) intentionally
 does not mount this plugin and keeps the stock backend.
 
 ## Desktop wiring
@@ -56,7 +57,7 @@ Mounted like every host plugin (see `docs/patch-plugin-contract.md`):
    `schemastery`) resolve to the installation's copies through the
    `@deepseek-ai/*` host fallback; they must stay declared so the linked
    package's imports are intercepted to the runtime.
-5. Plugins → Desktop plugins tab shows a "Fast Jev compaction" on/off card
+5. Settings → Built-in plugins → Desktop plugins tab shows a "Fast Jev compaction" on/off card
    (`dsh-desktop-market-installer` client, generic host-plugin state
    channels). Off drops the overlay patch layer at next Harness start, so
    the presets fall back to the built-in summarizer; on restores the swap.

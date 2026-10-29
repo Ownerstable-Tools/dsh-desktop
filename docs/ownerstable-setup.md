@@ -47,9 +47,11 @@ launch, the adapter also reads `~/.typesafe_key`; put only the key in this
 machine-local file and restrict its permissions with `chmod 600 ~/.typesafe_key`.
 Never commit credentials.
 
-In **Plugins → Desktop plugins**, enable **Fast Jev compaction** and restart
-Harness if prompted. Use a Standard, Cordis or PTC agent; the Minimal preset
-has no compaction backend. Safe Mode keeps the stock backend.
+In **Settings → Built-in plugins → Desktop plugins**, enable **Fast Jev
+compaction** and restart Harness if prompted. (The sidebar **Plugins** page is
+upstream's separate plugin manager.) Use a Standard, Cordis or PTC agent; the
+Minimal preset keeps the stock `compaction-basic` backend, which Fast Jev does
+not override. Safe Mode keeps the stock backend.
 
 On a sufficiently long session, run `/compact`. A log entry
 `fast-jev-compaction: scoring` followed by `kept N/M messages, no summary`
