@@ -7,7 +7,7 @@ The desktop still uses Harness packages installed by npm.
 
 ## Versions shipped together
 
-- Harness packages: `0.2.0-rc.2`, pinned in `package-lock.json`.
+- Harness packages: `0.2.1-rc.3`, pinned in `package-lock.json`.
 - Desktop adapter: `dsh-desktop-compaction-fast-jev` `0.1.0`.
 - Vendored Fast Jev library: `0.2.0`, upstream commit `e3f262a` (MIT license
   retained under the adapter's `vendor/fast-jev/`).
@@ -47,9 +47,11 @@ launch, the adapter also reads `~/.typesafe_key`; put only the key in this
 machine-local file and restrict its permissions with `chmod 600 ~/.typesafe_key`.
 Never commit credentials.
 
-In **Plugins → Desktop plugins**, enable **Fast Jev compaction** and restart
-Harness if prompted. Use a Standard, Cordis or PTC agent; the Minimal preset
-has no compaction backend. Safe Mode keeps the stock backend.
+In **Settings → Built-in plugins → Desktop plugins**, enable **Fast Jev
+compaction** and restart Harness if prompted. (The sidebar **Plugins** page is
+upstream's separate plugin manager.) Use a Standard, Cordis or PTC agent; the
+Minimal preset keeps the stock `compaction-basic` backend, which Fast Jev does
+not override. Safe Mode keeps the stock backend.
 
 On a sufficiently long session, run `/compact`. A log entry
 `fast-jev-compaction: scoring` followed by `kept N/M messages, no summary`

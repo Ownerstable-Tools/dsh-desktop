@@ -33,8 +33,9 @@ The bundle's `cordis.patch.yml` overrides the `preset-standard`,
 `preset-cordis` and `preset-ptc` agent presets with pinned copies of the
 shipped lists from `@deepseek-ai/dsh-web-app` `presets/*.patch.yml`, each with
 exactly one change: inside the `compaction` group, `compaction-basic` →
-`compaction-fast-jev`. `minimal` ships no compaction rows, so there is nothing
-to swap there. Safe Mode (`build/dsh-desktop-safe.patch.yml`) intentionally
+`compaction-fast-jev`. `minimal` also ships a `compaction` group with
+`compaction-basic`, but it is not overridden, so Minimal agents keep the stock
+summarizer. Safe Mode (`build/dsh-desktop-safe.patch.yml`) intentionally
 does not mount this plugin and keeps the stock backend.
 
 ## Desktop wiring
@@ -56,7 +57,7 @@ Mounted like every host plugin (see `docs/patch-plugin-contract.md`):
    `schemastery`) resolve to the installation's copies through the
    `@deepseek-ai/*` host fallback; they must stay declared so the linked
    package's imports are intercepted to the runtime.
-5. Plugins → Desktop plugins tab shows a "Fast Jev compaction" on/off card
+5. Settings → Built-in plugins → Desktop plugins tab shows a "Fast Jev compaction" on/off card
    (`dsh-desktop-market-installer` client, generic host-plugin state
    channels). Off drops the overlay patch layer at next Harness start, so
    the presets fall back to the built-in summarizer; on restores the swap.
@@ -128,14 +129,14 @@ upgrade of the `@deepseek-ai/*` packages that changes the shipped
   omitted.
 - `index.js` / `jev-adapt.js` / `test/smoke.mjs`: ported unchanged from that
   bundle (only machine-path references in comments updated).
-- Pinned preset lists: generated from `@deepseek-ai/dsh-web-app@0.2.0-rc.2`
+- Pinned preset lists: generated from `@deepseek-ai/dsh-web-app@0.2.1-rc.3`
   (the version this repo's lockfile installs) via
   `scripts/regenerate-presets.py`.
 
 
 ## Checkpoint size compatibility patch
 
-`patches/@deepseek-ai+dsh-compaction-basic+0.2.0-rc.2.patch` adds an optional
+`patches/@deepseek-ai+dsh-compaction-basic+0.2.1-rc.3.patch` adds an optional
 `canAcceptSummary` callback to the host summarizer input. It checks the
 host-framed checkpoint using the selected span's exact token budget. This
 lets Jev decline an expanding result while its stock-summary fallback is
@@ -144,3 +145,8 @@ The adapter falls back if the callback is missing. Remove or adapt this patch
 when upstream exposes an equivalent preflight contract. Regression coverage
 is in `test/jev-checkpoint-size.test.mjs`, including a real durable session
 replacement through the patched host.
+
+The chat expander shows these checkpoints as plain text rather than
+Markdown; that change is a hunk in
+`patches/@deepseek-ai+dsh-client-ui-chat+0.2.1-rc.3.patch`, covered by
+`test/compaction-summary-render-patch.test.ts`.
